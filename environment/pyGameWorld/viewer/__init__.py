@@ -184,7 +184,8 @@ def demonstrateWorld(world, hz = 30.):
 
 def demonstrateTPPlacement(toolpicker, toolname, position, maxtime=20.,
                            noise_dict=None, hz=30.):
-    tps = 1./hz
+    #tps = 1./hz
+    tps = .5/hz
     toolpicker.bts = tps
     if noise_dict:
         pth, ocm, etime, wd = toolpicker.runFullNoisyPath(toolname, position, maxtime, returnDict=True, **noise_dict)
