@@ -33,19 +33,19 @@ def read_the_game_file(file_name, path):
 
 if __name__ == '__main__':
 
-    '''
+    
     game_obj = read_the_game_file(
         'Catapult.json',
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
-    '''
+    
 
-    
+    '''
     game_obj = read_the_game_file(
-        'Catapult.json',
+        'Basic.json',
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
-    
+    '''
     ssup_model.SSUP_model_run(game_obj)
     
     # Find the path of objects over 2s

@@ -3,12 +3,10 @@
 import random
 import math
 import pdb
-import time
 
 import numpy as np
 from scipy.stats import norm as gaussian_dist
-from pyGameWorld import PGWorld, ToolPicker
-from pyGameWorld.viewer import demonstrateTPPlacement
+
 
 #parameters for the ssup model
 eps = 0.30 #value for the greedy strategy
@@ -16,7 +14,7 @@ init_pts = 3 #initial points for which the policy is inititialized
 sims = 4 #number of simulation that are being run for which the average reward is calculated
 iters = 5 #maximum number of simulation after which the action needs to be performed
 thresh = 0.5 #reward threshold for acting
-lr = .1 #learning rate for policy gradient
+lr = 0.1 #learning rate for policy gradient
 
 
 def exploration():
@@ -26,19 +24,18 @@ def exploration():
         return False
 
 
-def gaussian_sample_policy(policy_params, pts_no = 4):
+def gaussian_sample_policy(policy_params):
     """
     The function returns a sample from a gaussian probability 
     for given mean and standard deviation
     """
-    obj_list = [policy_params['w1'], policy_params['w2'], 1-policy_params['w1']-policy_params['w2']]
-
+    obj_list = [policy_params['w1'], policy_params['w2'], 1-policy_params['w1']-policy_params['w1']]
     tool_no = (obj_list.index(max(obj_list))+1)
     tool_no = str(tool_no)
-    pt_x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no],pts_no)
-    pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no], pts_no)
+    pt_x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
+    pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
 
-    return {'obj'+tool_no: [[pt_x[i], pt_y[i]] for i in range(pts_no)]}
+    return {'obj'+tool_no: [[pt_x, pt_y]]}
     
 def gaussian_func(mean, std, x):
     """
@@ -109,17 +106,10 @@ def calc_reward(path, init_dist, goal_cord):
     """
     if 'Goal' not in path.keys():
         #get the minimum distance of goal from object
-        if len(path['Ball']) == 2:
-            dist_list = [
-                np.sqrt((cord[0]-goal_cord[0])**2 + (cord[1]-goal_cord[1])**2) \
-                for cord in path['Ball'][0]
-            ]
-        else:
-            dist_list = [
-                np.sqrt((cord[0]-goal_cord[0])**2 + (cord[1]-goal_cord[1])**2) \
-                for cord in path['Ball']
-            ]
-        
+        dist_list = [
+            np.sqrt((cord[0]-goal_cord[0])**2 + (cord[1]-goal_cord[1])**2) \
+            for cord in path['Ball'][0]
+        ]
         dist_goal_min = min(dist_list)
         
         return (1-(dist_goal_min/init_dist))
@@ -134,7 +124,7 @@ def init_policy():
     enviornment
     """
     policy_param = {
-        'w1':0, 'w2':1,
+        'w1':0, 'w2':0,
         'ux1':300, 'uy1':300, 'sx1':50, 'sy1':50,
         'ux2':300, 'uy2':300, 'sx2':50, 'sy2':50,
         'ux3':300, 'uy3':300, 'sx3':50, 'sy3':50,
@@ -192,7 +182,7 @@ def get_dynamic_obj(world_dict):
                 value.update({'y_mean':y_mean, 'x_range':[x_min, x_max]})
                 dynamic_obj.update({key:value})
             else:
-                print("New structure for the dynamic object--------------")
+                print("new structure for the dynamic object")
                 pdb.set_trace()
 
     return dynamic_obj
@@ -238,7 +228,7 @@ def sample(dynamic_obj, tools, tool_points_no=1, y_dist=200, x_dist=20):
     return init_pts
         
 
-def simulate(game_obj, init_pts, init_dist, goal_cord, noisy=True):
+def simulate(game_obj, init_pts, init_dist, goal_cord):
     """
     Run noisy simulation based on the points to get noisy rewards
     Args:
@@ -251,44 +241,27 @@ def simulate(game_obj, init_pts, init_dist, goal_cord, noisy=True):
     init_pts(dict) --> initial points for each tool
     """
     total_reward = 0
-    total_cont = 0
-    best_reward = -10
+    total_cont = 0 
     for tool in init_pts.keys():
         for pts_no in init_pts[tool]:
-            pts_no
+            position = pts_no
             noise_dict = {
                 'noise_position_static': 5., 'noise_position_moving': 5.,
                 'noise_collision_direction': .2, 'noise_collision_elasticity': .2, 'noise_gravity': .1,
                 'noise_object_friction': .1, 'noise_object_density': .1, 'noise_object_elasticity': .1
                          }
 
-            if noisy:
-                path_dict, success, time_taken, world_act = game_obj.runFullNoisyPath(
-                    tool, pts_no, maxtime=20., returnDict=True, **noise_dict
-                )
-            else:
-                path_dict, success, time_to_success = game_obj.observePlacementPath(
-                    toolname=tool,position=pts_no ,maxtime=20.
-                )
-                if path_dict == None:
-                    print("No path achieved")
-                    continue
-                
+            path_dict, success, time_taken, world_act = game_obj.runFullNoisyPath(
+                tool, position, maxtime=20., returnDict=True, **noise_dict
+            )
+            
             reward = calc_reward(path_dict, init_dist, goal_cord)
-            if reward>best_reward:
-                best_reward = reward
-                best = {'reward': reward, 'action': tool, 'pos': pts_no}
-                
             total_reward = total_reward + reward
             total_cont = total_cont + 1
 
-    try:
-        return (total_reward/total_cont), success, best
-    except ZeroDivisionError:
-        return 0, success, None
-    except:
-        return (total_reward/total_cont), success, None
-    
+            
+    return (total_reward/total_cont), success
+
 
 
 def get_policy_gradients(policy_params, x, y, tool):
@@ -364,47 +337,24 @@ def update_policy_params(policy_params, points, reward_all_pts):
     """
     The function updates policy parameters using policy gradients for given reward
     """
-    #scale policy params and the points
-    for key in policy_params:
-        if (key!='w1' and key!='w2'):
-            policy_params[key] = policy_params[key]/600
-    
     grads = init_gradients()
     total_prob = 0 
     for tools in points.keys():
         for point in points[tools]:
-            point_0 = point[0]/600
-            point_1 = point[1]/600
-            #policy_gradient = get_policy_gradients(policy_params, point[0], point[1], tools)
-            policy_gradient = get_policy_gradients(policy_params, point_0, point_1, tools)
+            policy_gradient = get_policy_gradients(policy_params, point[0], point[1], tools)
             for key, value in policy_gradient.items():
                 grads[key] = grads[key] + value
                 
-            #total_prob = total_prob + calc_prob(policy_params, tools, point)
-            total_prob = total_prob + calc_prob(policy_params, tools, [point_0, point_1])
+            total_prob = total_prob + calc_prob(policy_params, tools, point)
     
-    #print("the gradients are ", grads)
-    #print("total probability denominatior is ", total_prob)
+    print("the gradients are ", grads)
+    print("total probability denominatior is ", total_prob)
     #update the policy parameters
 
-    w1 = policy_params['w1'] + (reward_all_pts*lr*grads['w1'])
-    w2 = policy_params['w2'] + (reward_all_pts*lr*grads['w2'])
-
-    if w1>=0 and w1<=1 and (w1+w2)<=1 and (w1+w2)>=0:
-        policy_params['w1'] = w1
-    if w2>=0 and w2<=1 and (w1+w2)<=1 and (w1+w2)>=0:
-        policy_params['w2'] = w2
-        
     for key in grads.keys():
-        if (key!='w1' and key!='w2'):
-            new_param = policy_params[key] + (reward_all_pts*lr*grads[key])
-            if new_param>0 and new_param<1:
-                policy_params[key] = policy_params[key] + (reward_all_pts*lr*grads[key])
+        policy_params[key] = policy_params[key] + (reward_all_pts*lr*grads[key])/total_prob
 
-    for key in policy_params:
-        if (key!='w1' and key!='w2'):
-            policy_params[key] = policy_params[key]*600
-            
+    
     return policy_params
 
 def SSUP_model_run(world):
@@ -417,50 +367,36 @@ def SSUP_model_run(world):
     model_run(Pandas df): Pandas dataframe for the model run values
     best_pos(corrdinated): best coordinate values for the given enviornment
     """
-    import time
-
-
-    
     #get the dynamic_objs
     dynamic_obj = get_dynamic_obj(world._worlddict['objects'])
-    
+
     #init policy
     policy_params = init_policy()
-
     
     #get dist between target and object and the corrdinates for goal
     goal_cord, init_dist = find_init_dist(world._worlddict)
-    
+
 
     #ssup algorithm start
     
     #Sample ninit points from prior π(s) for each tool
     init = sample(dynamic_obj, world._tools, 3)
     
-
-
     #Simulate actions to get noisy rewards rˆ using internal model
-    rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
-    
+    rewards, success = simulate(world, init, init_dist, goal_cord)
 
-    
     #Initialize policy parameters θ using policy gradient on initial points
     policy_params = update_policy_params(policy_params, init, rewards)
-    
 
-    
     #Give a total of 10 tries for the agent to get the best position
     #for total_tries in range(30):
-    tools = ['obj1', 'obj2', 'obj3']
-    ninit = 0
-    trial = 0
-    task_comp = False
-    while True:
 
-        abs_best_action = {'reward':0}
+    while True:
+        acting = False
+        
         if exploration():
             #sample action a from prior
-            action_sample = sample(dynamic_obj, world._tools, 4)
+            action_sample = sample(dynamic_obj, world._tools, 1)
             main_obj = random.sample(action_sample.keys(),1)[0]
             
             action_sample = {main_obj: action_sample[main_obj]}
@@ -469,51 +405,17 @@ def SSUP_model_run(world):
         else:
             #sample a point from the policy
             action_sample = gaussian_sample_policy(policy_params)
+
+                    
+        rewards, success = simulate(world, init, init_dist, goal_cord)
         
-
-        avg_rewards, success, best_action = simulate(world, action_sample, init_dist, goal_cord, True)
-        ninit = ninit + 1
-
-        if best_action['reward'] > abs_best_action['reward']:
-            abs_best_action = best_action
-            
-        if ninit==5 or avg_rewards>0.5 or success:
-            ninit = 0
-            trial = trial + 1
-            check_other = {
-                val: [abs_best_action['pos']] for val in list(
-                    set(tools) - set([abs_best_action['action']])
-                )
-            }
-            avg_rewards, success, best_action = simulate(
-                world, {abs_best_action['action']: [abs_best_action['pos']]},
-                init_dist, goal_cord, False
-            )
-            if success:
-                demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
-                print("Successfully completed the task on trail-----> ", trail)
-                task_comp = True
-            else:
-                None
-                avg_rewards_other, success, best_action = simulate(
-                    world, check_other,
-                    init_dist, goal_cord, True
-                )
-                avg_rewards = (avg_rewards + avg_rewards_other)/2
-                check_other.update({abs_best_action['action']: [abs_best_action['pos']]})
-                policy_params = update_policy_params(policy_params, check_other, avg_rewards)
-
-                #try:
-                #    demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
-                #except:
-                #    continue
-            
-        else:   
-            #Initialize policy parameters θ using policy gradient on initial points
-            policy_params = update_policy_params(policy_params, action_sample, avg_rewards)
-
-        if task_comp:
+        #Initialize policy parameters θ using policy gradient on initial points
+        policy_params = update_policy_params(policy_params, init, rewards)
+        
+        print("\n The reward is \n", rewards)
+        print("\n The policy params are \n", policy_params)
+        print("\n the success of the simulation is \n", success)
+        if success == True:
             break
-        print("Trial Completed are ---> ", trial)
-        print("The new policy params are", policy_params)
-        print("The reward on this iteration was", avg_rewards)
+
+    print("Found the solution")

@@ -29,3 +29,5 @@ tp = ToolPicker(
 
 path_dict, success, time_to_success = tp.observePlacementPath(toolname="obj1",position=(90,400),maxtime=20.)
 print("Action was successful? ", success)
+import pdb
+pdb.set_trace()

@@ -39,10 +39,9 @@ if __name__ == '__main__':
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
     '''
-
     
     game_obj = read_the_game_file(
-        'Catapult.json',
+    init_world['objects']['Ball']'Shafts_B.json',
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
     
