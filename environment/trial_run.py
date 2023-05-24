@@ -8,6 +8,7 @@ from pyGameWorld import PGWorld, ToolPicker
 from pyGameWorld.viewer import demonstrateTPPlacement
 from pyGameWorld import noisifyWorld
 from pyGameWorld import ssup_model
+import pandas as pd
 
 Game_list = [
     'Gap.json', 'Shafts_B.json', 'Table_A.json', 
@@ -45,9 +46,12 @@ if __name__ == '__main__':
         'Catapult.json',
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
-    
-    ssup_model.SSUP_model_run(game_obj)
-    
+
+    main_out = pd.DataFrame()
+    for count in range(250):
+        success, out_df = ssup_model.SSUP_model_run(game_obj, 'catapult', count)
+        main_out = pd.concat([main_out, out_df])
+        main_out.to_csv("output.csv", index=False)
     # Find the path of objects over 2s
     # Comes out as a dict with the moveable object names
     # (PLACED for the placed tool) with a list of positions over time each
