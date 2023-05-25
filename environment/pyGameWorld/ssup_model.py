@@ -26,8 +26,55 @@ def exploration():
     else:
         return False
 
+def sample(world, dynamic_obj, tools, tool_points_no=1, y_dist=200, x_dist=20):
+    """
+    Samples the points based on the object oriented priors
 
-def gaussian_sample_policy(policy_params, pts_no = 4, sample=None):
+    Args:
+    dynamic_obj(dict) -> objects dictionary coordinates that is used to sample 
+    the initial points
+    tools(dict)-> Tools being used in the enviornment
+
+    Return
+    init_points(dict): initialized points
+    """
+    
+    #sample points
+    init_pts = {}
+
+    #sample an initial point for each tool
+    for tool in tools.keys():
+        for t_pts in range(tool_points_no):
+            valid_pts = False
+            
+            while valid_pts==False:
+                #randomly sample a dynamic object
+                samp_dyn_obj = random.sample(dynamic_obj.keys(),1)[0]
+
+                #sample y points basedo n gaussian dist
+                y_init = int(np.random.normal(dynamic_obj[samp_dyn_obj]['y_mean'], y_dist,1))
+
+                #sample x uniformly
+                x_0 = dynamic_obj[samp_dyn_obj]['x_range'][0]-x_dist
+                x_1 = dynamic_obj[samp_dyn_obj]['x_range'][1]+x_dist
+                x_init = random.sample(range(x_0, x_1), 1)[0]
+
+                if y_init<0:
+                    y_init = dynamic_obj[samp_dyn_obj]['y_mean'] \
+                        + (dynamic_obj[samp_dyn_obj]['y_mean'] - y_init)
+
+                if world.checkPlacementCollide(tool, [x_init,y_init]) == False:
+                    valid_pts = True
+
+                
+            if tool in init_pts.keys():
+                init_pts[tool].append([x_init, y_init])
+            else:
+                init_pts.update({tool:[[x_init, y_init]]})
+
+    return init_pts
+
+def gaussian_sample_policy(world, policy_params, pts_no = 4, sample=None):
     """
     The function returns a sample from a gaussian probability 
     for given mean and standard deviation
@@ -37,19 +84,20 @@ def gaussian_sample_policy(policy_params, pts_no = 4, sample=None):
 
         tool_no = (obj_list.index(max(obj_list))+1)
         tool_no = str(tool_no)
-        pt_x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no], pts_no)
-        pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no], pts_no)
-
-        for pt in range(pts_no):
-            if pt_x[pt]>600:
-                pt_x[pt] = 600
-            if pt_y[pt]>600:
-                pt_y[pt] = 600
-            if pt_x[pt]<0:
-                pt_x[pt] = 0
-            if pt_y[pt]<0:
-                pt_y[pt] = 0
-
+        pt_x  = []
+        pt_y = []
+        for s_n in range(pts_no):
+            
+            x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
+            y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
+            
+            while world.checkPlacementCollide('obj'+tool_no, [x,y]):
+                x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
+                y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
+        
+            pt_x.append(x)
+            pt_y.append(y)
+            
         return {'obj'+tool_no: [[pt_x[i], pt_y[i]] for i in range(pts_no)]}
     
     else:
@@ -57,17 +105,14 @@ def gaussian_sample_policy(policy_params, pts_no = 4, sample=None):
         points = {}
         for tool in tools:
             tool_no = tool.split('obj')[1]
+            
             pt_x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
             pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
+            
+            while world.checkPlacementCollide(tool, [pt_x,pt_y]):
+                pt_x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
+                pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
 
-            if pt_x>600:
-                pt_x = 600
-            if pt_y>600:
-                pt_y = 600
-            if pt_x<0:
-                pt_x = 0
-            if pt_y<0:
-                pt_y = 0
             points.update({tool: [[pt_x, pt_y]]})
             
         return points
@@ -233,45 +278,6 @@ def get_dynamic_obj(world_dict):
 
     return dynamic_obj
     
-def sample(dynamic_obj, tools, tool_points_no=1, y_dist=200, x_dist=20):
-    """
-    Samples the points based on the object oriented priors
-
-    Args:
-    dynamic_obj(dict) -> objects dictionary coordinates that is used to sample 
-    the initial points
-    tools(dict)-> Tools being used in the enviornment
-
-    Return
-    init_points(dict): initialized points
-    """
-    
-    #sample points
-    init_pts = {} 
-    #sample an initial point for each tool
-    for tool in tools.keys():
-        for t_pts in range(tool_points_no):
-            #randomly sample a dynamic object
-            samp_dyn_obj = random.sample(dynamic_obj.keys(),1)[0]
-
-            #sample y points basedo n gaussian dist
-            y_init = int(np.random.normal(dynamic_obj[samp_dyn_obj]['y_mean'], y_dist,1))
-
-            #sample x uniformly
-            x_0 = dynamic_obj[samp_dyn_obj]['x_range'][0]-x_dist
-            x_1 = dynamic_obj[samp_dyn_obj]['x_range'][1]+x_dist
-            x_init = random.sample(range(x_0, x_1), 1)[0]
-
-            if y_init<0:
-                y_init = dynamic_obj[samp_dyn_obj]['y_mean'] \
-                    + (dynamic_obj[samp_dyn_obj]['y_mean'] - y_init)
-                
-            if tool in init_pts.keys():
-                init_pts[tool].append([x_init, y_init])
-            else:
-                init_pts.update({tool:[[x_init, y_init]]})
-
-    return init_pts
         
 
 def simulate(game_obj, init_pts, init_dist, goal_cord, noisy=True):
@@ -485,11 +491,10 @@ def SSUP_model_run(world, game, idg):
     #ssup algorithm start
     
     #Sample ninit points from prior π(s) for each tool
-    init = sample(dynamic_obj, world._tools, 3)
+    init = sample(world, dynamic_obj, world._tools, 3)
     
 
     rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
-
     
     #Initialize policy parameters θ using policy gradient on initial points
     policy_params = update_policy_params(policy_params, init, rewards)
@@ -521,7 +526,7 @@ def SSUP_model_run(world, game, idg):
         abs_best_action = {'reward':-1}
         if exploration():
             #sample action a from prior
-            action_sample = sample(dynamic_obj, world._tools, 4)
+            action_sample = sample(world, dynamic_obj, world._tools, 4)
             main_obj = random.sample(action_sample.keys(),1)[0]
             
             action_sample = {main_obj: action_sample[main_obj]}
@@ -529,7 +534,7 @@ def SSUP_model_run(world, game, idg):
 
         else:
             #sample a point from the policy
-            action_sample = gaussian_sample_policy(policy_params)
+            action_sample = gaussian_sample_policy(world, policy_params)
         
 
         avg_rewards, success, best_action = simulate(world, action_sample, init_dist, goal_cord, True)
@@ -548,6 +553,7 @@ def SSUP_model_run(world, game, idg):
                 )
             except:
                 pdb.set_trace()
+                
             game_df = pd.DataFrame(
                 data = [[
                     game, idg, trial, abs_best_action['action'],
@@ -558,16 +564,19 @@ def SSUP_model_run(world, game, idg):
             out_df = pd.concat([out_df, game_df])
 
             #try:
-            #    demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
+            print("Demonstrating the action ", abs_best_action['action'] , abs_best_action['pos'])
+            demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
             #except:
             #    print("Can't do the demonstration at ", abs_best_action['pos'])
             if success:
-                demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
-                #print("Successfully completed the task on trail-----> ", trial)
+                #demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
+                print("Successfully completed the task on trail-----> ", trial)
                 task_comp = True
                 return task_comp, out_df
             else:
-                check_other = gaussian_sample_policy(policy_params, sample=abs_best_action['action'])
+                check_other = gaussian_sample_policy(
+                    world, policy_params, sample=abs_best_action['action']
+                )
                 avg_rewards_other, success, best_action = simulate(
                     world, check_other,
                     init_dist, goal_cord, True
