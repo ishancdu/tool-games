@@ -18,7 +18,7 @@ sims = 4 #number of simulation that are being run for which the average reward i
 iters = 5 #maximum number of simulation after which the action needs to be performed
 thresh = 0.5 #reward threshold for acting
 lr = .1 #learning rate for policy gradient
-scl = 1
+scl = 600
 
 def exploration():
     if random.random()<0.3:
@@ -48,6 +48,7 @@ def sample(world, dynamic_obj, tools, tool_points_no=1, y_dist=200, x_dist=20):
             valid_pts = False
             
             while valid_pts==False:
+                print("creating sample oo")
                 #randomly sample a dynamic object
                 samp_dyn_obj = random.sample(dynamic_obj.keys(),1)[0]
 
@@ -92,6 +93,7 @@ def gaussian_sample_policy(world, policy_params, pts_no = 4, sample=None):
             y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
             
             while world.checkPlacementCollide('obj'+tool_no, [x,y]):
+                print("creating sample gmm")
                 x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
                 y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
         
@@ -110,6 +112,7 @@ def gaussian_sample_policy(world, policy_params, pts_no = 4, sample=None):
             pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
             
             while world.checkPlacementCollide(tool, [pt_x,pt_y]):
+                
                 pt_x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
                 pt_y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
 
@@ -298,12 +301,18 @@ def simulate(game_obj, init_pts, init_dist, goal_cord, noisy=True):
     for tool in init_pts.keys():
         for pts_no in init_pts[tool]:
             pts_no
+            '''
             noise_dict = {
                 'noise_position_static': 5., 'noise_position_moving': 5.,
                 'noise_collision_direction': .2, 'noise_collision_elasticity': .2, 'noise_gravity': .1,
                 'noise_object_friction': .1, 'noise_object_density': .1, 'noise_object_elasticity': .1
                          }
-
+            '''
+            noise_dict = {
+                'noise_position_static': 0, 'noise_position_moving': 0,
+                'noise_collision_direction': .1, 'noise_collision_elasticity': .1, 'noise_gravity': 0,
+                'noise_object_friction': 0, 'noise_object_density': 0, 'noise_object_elasticity': .1
+                         }
             if noisy:
                 path_dict, success, time_taken, world_act = game_obj.runFullNoisyPath(
                     tool, pts_no, maxtime=20., returnDict=True, **noise_dict
@@ -492,15 +501,15 @@ def SSUP_model_run(world, game, idg):
     
     #Sample ninit points from prior π(s) for each tool
     init = sample(world, dynamic_obj, world._tools, 3)
-    
+    print("The initial points are ", init)
 
-    rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
+    #rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
     
     #Initialize policy parameters θ using policy gradient on initial points
-    policy_params = update_policy_params(policy_params, init, rewards)
+    #policy_params = update_policy_params(policy_params, init, rewards)
  
 
-    '''
+
     for obj in init.keys():
         for point in init[obj]:
             #Simulate actions to get noisy rewards rˆ using internal model
@@ -511,7 +520,7 @@ def SSUP_model_run(world, game, idg):
             #Initialize policy parameters θ using policy gradient on initial points
             #policy_params = update_policy_params(policy_params, init, rewards)
             policy_params = update_policy_params(policy_params, pts, rewards)
-    '''
+
 
     
     #Give a total of 10 tries for the agent to get the best position
@@ -597,6 +606,7 @@ def SSUP_model_run(world, game, idg):
 
         if task_comp:
             break
-        #print("Trial Completed are ---> ", trial)
-        #print("The new policy params are", policy_params)
-        #print("The reward on this iteration was", avg_rewards)
+        
+        print("Trial Completed are ---> ", trial)
+        print("The new policy params are", policy_params)
+        print("The reward on this iteration was", avg_rewards)
