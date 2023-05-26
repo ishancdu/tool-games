@@ -50,8 +50,11 @@ if __name__ == '__main__':
     main_out = pd.DataFrame()
     for count in range(250):
         success, out_df = ssup_model.SSUP_model_run(game_obj, 'catapult', count)
+        out_df['success'] = success
+        out_df['total_attempt'] = out_df.shape[0]
         main_out = pd.concat([main_out, out_df])
         main_out.to_csv("output.csv", index=False)
+
     # Find the path of objects over 2s
     # Comes out as a dict with the moveable object names
     # (PLACED for the placed tool) with a list of positions over time each

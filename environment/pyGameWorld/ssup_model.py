@@ -46,9 +46,13 @@ def sample(world, dynamic_obj, tools, tool_points_no=1, y_dist=200, x_dist=20):
     for tool in tools.keys():
         for t_pts in range(tool_points_no):
             valid_pts = False
-            
+            sum_loop = 0
             while valid_pts==False:
-                print("creating sample oo")
+                sum_loop = sum_loop+1
+                if sum_loop>100:
+                    print("Stuck in the loop...........")
+                    exit()
+                #print("creating sample oo")
                 #randomly sample a dynamic object
                 samp_dyn_obj = random.sample(dynamic_obj.keys(),1)[0]
 
@@ -91,9 +95,12 @@ def gaussian_sample_policy(world, policy_params, pts_no = 4, sample=None):
             
             x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
             y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
-            
+            sum_l = 0
             while world.checkPlacementCollide('obj'+tool_no, [x,y]):
-                print("creating sample gmm")
+                sum_l = sum_l + 1
+                if sum_l > 100:
+                    print("Stuck in the loop......... gaussian sample------->")
+                #print("creating sample gmm")
                 x = np.random.normal(policy_params['ux'+tool_no], policy_params['sx'+tool_no])
                 y = np.random.normal(policy_params['uy'+tool_no], policy_params['sy'+tool_no])
         
@@ -439,7 +446,16 @@ def update_policy_params(policy_params, points, reward_all_pts):
     #update the policy parameters
     w1 = policy_params['w1'] + (reward_all_pts*lr*grads['w1'])
     w2 = policy_params['w2'] + (reward_all_pts*lr*grads['w2'])
+
     
+    #if w1-w2>0.1:
+    #    policy_params['w1'] = 1
+    #    policy_params['w2'] = 0
+    #    
+    #if w2-w1>0.1:
+    #    policy_params['w1'] = 0
+    #    policy_params['w2'] = 1
+        
     if w1>=0 and w1<=1 and (w1+w2)<=1 and (w1+w2)>=0:
         policy_params['w1'] = w1
     elif w1<0 and (w1+w2)<=1 and (w1+w2)>=0:
@@ -503,13 +519,13 @@ def SSUP_model_run(world, game, idg):
     init = sample(world, dynamic_obj, world._tools, 3)
     print("The initial points are ", init)
 
-    #rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
+    rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
     
     #Initialize policy parameters θ using policy gradient on initial points
-    #policy_params = update_policy_params(policy_params, init, rewards)
+    policy_params = update_policy_params(policy_params, init, rewards)
  
 
-
+    '''
     for obj in init.keys():
         for point in init[obj]:
             #Simulate actions to get noisy rewards rˆ using internal model
@@ -520,7 +536,7 @@ def SSUP_model_run(world, game, idg):
             #Initialize policy parameters θ using policy gradient on initial points
             #policy_params = update_policy_params(policy_params, init, rewards)
             policy_params = update_policy_params(policy_params, pts, rewards)
-
+    '''
 
     
     #Give a total of 10 tries for the agent to get the best position
