@@ -1,0 +1,12 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Prevention_A,0,1,obj1,505.7398756954574,480.6847618058451,False,11
+Prevention_A,0,2,obj1,508.9048365677986,501.6525203250404,False,11
+Prevention_A,0,3,obj1,520.2116968317047,504.9642283185229,False,11
+Prevention_A,0,4,obj1,519.8189359087014,512.4998379687892,False,11
+Prevention_A,0,5,obj1,278.16312679683074,523.6177639316326,False,11
+Prevention_A,0,6,obj1,485.63253082543326,278.7412390462722,False,11
+Prevention_A,0,7,obj2,54.0,383.0,False,11
+Prevention_A,0,8,obj2,56.0,476.0,False,11
+Prevention_A,0,9,obj1,390.03114893786403,525.3430490269388,False,11
+Prevention_A,0,10,obj1,437.33313263202905,507.46994730304397,False,11
+Prevention_A,0,11,obj2,19.0,439.0,False,11

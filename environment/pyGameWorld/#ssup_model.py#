@@ -18,7 +18,7 @@ sims = 4 #number of simulation that are being run for which the average reward i
 iters = 5 #maximum number of simulation after which the action needs to be performed
 thresh = 0.5 #reward threshold for acting
 lr = .1 #learning rate for policy gradient
-scl = 600
+scl = 6xo00
 
 def exploration():
     if random.random()<0.3:

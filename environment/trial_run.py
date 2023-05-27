@@ -39,21 +39,23 @@ if __name__ == '__main__':
         'Catapult.json',
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
-    '''
+    
 
+    '''
+    game_name = 'Catapult.json'
     
     game_obj = read_the_game_file(
-        'Catapult.json',
+        game_name,
         '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/Original/'
         )
-
+    
     main_out = pd.DataFrame()
-    for count in range(250):
-        success, out_df = ssup_model.SSUP_model_run(game_obj, 'catapult', count)
+    for count in range(25):
+        success, out_df = ssup_model.SSUP_model_run(game_obj, game_name.split('.')[0], count)
         out_df['success'] = success
         out_df['total_attempt'] = out_df.shape[0]
         main_out = pd.concat([main_out, out_df])
-        main_out.to_csv("output.csv", index=False)
+        main_out.to_csv("output_"+game_name.split('.')[0]+".csv", index=False)
 
     # Find the path of objects over 2s
     # Comes out as a dict with the moveable object names
