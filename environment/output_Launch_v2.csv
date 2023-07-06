@@ -1,0 +1,6 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Launch_v2,0,1,obj1,320.2069284467496,230.15087713357818,True,5
+Launch_v2,0,2,obj1,97.04383627820022,540.1171563545272,True,5
+Launch_v2,0,3,obj1,343.48013777055314,365.9350472292463,True,5
+Launch_v2,0,4,obj3,173.0,529.0,True,5
+Launch_v2,0,5,obj1,78.0,413.0,True,5

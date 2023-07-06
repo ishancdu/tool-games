@@ -1,0 +1,9 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Falling_v2,0,1,obj1,519.732882384316,527.3699701319805,True,8
+Falling_v2,0,2,obj1,71.3081392781175,261.68155395319354,True,8
+Falling_v2,0,3,obj1,314.80774831424725,501.599645867589,True,8
+Falling_v2,0,4,obj3,367.0,405.0,True,8
+Falling_v2,0,5,obj3,369.0,408.0,True,8
+Falling_v2,0,6,obj3,466.2384631562834,85.87715350047381,True,8
+Falling_v2,0,7,obj3,331.3281928772531,511.707039166042,True,8
+Falling_v2,0,8,obj2,310.0,232.0,True,8

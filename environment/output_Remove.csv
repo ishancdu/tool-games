@@ -1,0 +1,3 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Remove,0,1,obj1,328.2338321604929,340.8988110623202,True,2
+Remove,0,2,obj3,328.55653100684447,323.1219832509981,True,2

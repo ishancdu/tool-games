@@ -1,0 +1,13 @@
+#gets the correlation between participants
+
+
+import pandas as pd
+import pdb
+
+
+
+if __name__ == '__main__':
+
+
+    df = pd.read_csv(
+        '/home/ishan/workspace/msc_dissertation/tool-games/environment/data/HumanDataForComparison.csv')

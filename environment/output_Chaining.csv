@@ -1,0 +1,4 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Chaining,0,1,obj1,552.6808808554397,548.1796855077557,True,3
+Chaining,0,2,obj1,533.8004503630805,404.91921383121615,True,3
+Chaining,0,3,obj1,57.65132692932207,555.4622091195906,True,3

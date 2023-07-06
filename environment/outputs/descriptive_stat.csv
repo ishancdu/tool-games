@@ -1,0 +1,25 @@
+Stat,Gravity,Score type,Subject,Value
+mean,normal,accuracy,model,53.75
+mean,normal,average tries,model,8.322905301021576
+std,normal,accuracy,model,33.096180185289406
+std,normal,average tries,model,1.9093974031455776
+mean,half,accuracy,model,53.5
+mean,half,average tries,model,8.231709457574492
+std,half,accuracy,model,31.309514756471625
+std,half,average tries,model,2.091853893423904
+mean,double,accuracy,model,51.0
+mean,double,average tries,model,8.478061653338258
+std,doub,accuracy,model,29.914162914197398
+std,double,average tries,model,1.706740424354321
+mean,normal,accuracy,human,54.603950755266546
+mean,normal,average tries,human,4.479398482489598
+std,normal,accuracy,human,24.889889339862236
+std,normal,average tries,human,0.8298105749364109
+mean,half,accuracy,human,86.30514705882354
+mean,half,average tries,human,3.3770973863531175
+std,half,accuracy,human,14.992931169286408
+std,half,average tries,human,1.029825959040569
+mean,double,accuracy,human,83.33333333333333
+mean,double,average tries,human,3.2309894010480784
+std,doub,accuracy,human,16.629422672260706
+std,double,average tries,human,1.377471170440667

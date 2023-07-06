@@ -1,0 +1,4 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Shafts_A,0,1,obj1,489.92017554971676,534.1023408828346,True,1
+Shafts_A,1,1,obj1,547.026051561048,539.6008781222306,True,1
+Shafts_A,2,1,obj1,466.2313151127032,556.5137265461617,True,1

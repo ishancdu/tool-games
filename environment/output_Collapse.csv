@@ -1,0 +1,4 @@
+game_name,game iter,trial_no,tool,posx,posy,success,total_attempt
+Collapse,0,1,obj1,412.0879867464995,408.19152623584785,True,3
+Collapse,0,2,obj1,421.802355492755,412.3598182779954,True,3
+Collapse,0,3,obj1,429.36022513664767,416.21309556675897,True,3
