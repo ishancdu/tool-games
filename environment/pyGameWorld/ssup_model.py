@@ -90,6 +90,7 @@ def sample(world, dynamic_obj, tools, tool_points_no=1, y_dist=200, x_dist=20):
                 x_1 = dynamic_obj[samp_dyn_obj]['x_range'][1]+x_dist
                 x_init = random.sample(range(x_0, x_1), 1)[0]
 
+
                 if y_init<0:
                     y_init = dynamic_obj[samp_dyn_obj]['y_mean'] \
                         + (dynamic_obj[samp_dyn_obj]['y_mean'] - y_init)
@@ -130,7 +131,7 @@ def gaussian_sample_policy(world, policy_params, pts_no = 4, sample=None):
                 if sum_l > 100:
                     x = np.random.normal(policy_params['ux'+tool_no], 300)
                     y = np.random.normal(policy_params['uy'+tool_no], 300)
-                    print("Stuck in the loop......... gaussian sample------->")
+                    #print("Stuck in the loop......... gaussian sample------->")
                 
             pt_x.append(x)
             pt_y.append(y)
@@ -154,7 +155,7 @@ def gaussian_sample_policy(world, policy_params, pts_no = 4, sample=None):
                 if sum_l > 100:
                     pt_x = np.random.normal(policy_params['ux'+tool_no], 300)
                     pt_y = np.random.normal(policy_params['uy'+tool_no], 300)
-                    print("Stuck in the loop......... gaussian sample------->")
+                    #print("Stuck in the loop......... gaussian sample------->")
 
             points.update({tool: [[pt_x, pt_y]]})
             
@@ -207,10 +208,20 @@ def find_init_dist(init_world):
     """
     
     if init_world['gcond']['goal'] == 'Floor':
-        init_ball = init_world['objects']['Ball']['position']
-        init_goal = [0, 0]
-        init_dist = (init_ball[1] - init_goal[1])
-        return init_goal, init_dist
+        if 'Ball' in init_world['objects'].keys():
+            init_ball = init_world['objects']['Ball']['position']
+            init_goal = [0, 0]
+            init_dist = (init_ball[1] - init_goal[1])
+            return init_goal, init_dist
+        else:
+            init_ball = [(init_world['objects'][init_world['gcond']['obj']]['x_range'][0]\
+                          +init_world['objects'][init_world['gcond']['obj']]['x_range'][1])/2,
+                         init_world['objects'][init_world['gcond']['obj']]['y_mean']
+                         ]
+            init_goal = [0, 0]
+            init_dist = (init_ball[1] - init_goal[1])
+            
+            return init_goal, init_dist
 
     elif 'Ball' in init_world['objects'].keys():
         init_ball = init_world['objects']['Ball']['position']
@@ -246,9 +257,11 @@ def find_init_dist(init_world):
             init_dist = np.sqrt((x_init_g-init_ball[0])**2 + (y_init_g-init_ball[1])**2)
             
         return init_goal, init_dist
-    
+
     else:
+        
         ball_keys = [val for val in init_world['objects'].keys() if 'Ball' in val]
+            
         max_dist = 0
         x_init_g = (
             init_world['objects']['Goal']['points'][0][0] \
@@ -262,13 +275,26 @@ def find_init_dist(init_world):
             + init_world['objects']['Goal']['points'][2][1] \
             + init_world['objects']['Goal']['points'][3][1]) \
             /4
-        
-        for ball in ball_keys:
-            init_ball = init_world['objects'][ball]['position']
-            init_goal = [x_init_g, y_init_g]
-            init_dist = np.sqrt((x_init_g-init_ball[0])**2 + (y_init_g-init_ball[1])**2)
-            if init_dist>max_dist:
-                max_dist = init_dist
+
+        if len(ball_keys) == 0:
+            for vals in init_world['objects'].keys():
+                if init_world['objects'][vals]['color'] == 'red':
+                    init_ball = [(init_world['objects'][vals]['x_range'][0] \
+                                  + init_world['objects'][vals]['x_range'][1])/2, 
+                                 init_world['objects'][vals]['y_mean']]
+                    init_goal = [x_init_g, y_init_g]
+                    init_dist = np.sqrt((x_init_g-init_ball[0])**2 + (y_init_g-init_ball[1])**2)
+                    if init_dist>max_dist:
+                        max_dist = init_dist
+                    
+        else:
+            for ball in ball_keys:
+                init_ball = init_world['objects'][ball]['position']
+                init_goal = [x_init_g, y_init_g]
+                init_dist = np.sqrt((x_init_g-init_ball[0])**2 + (y_init_g-init_ball[1])**2)
+                if init_dist>max_dist:
+                    max_dist = init_dist
+
         return init_goal, max_dist
         
 def calc_reward(path, init_dist, goal_cord, game_obj):
@@ -315,7 +341,8 @@ def calc_reward(path, init_dist, goal_cord, game_obj):
 
             return (1-(dist_goal_min/init_dist))
 
-        else:
+        elif 'objlist' in game_obj._worlddict['gcond'].keys():
+            
             ball_list = game_obj._worlddict['gcond']['objlist']
             dist_lis = []
             for ball in ball_list:
@@ -334,7 +361,24 @@ def calc_reward(path, init_dist, goal_cord, game_obj):
                 dist_lis.append(dist_goal_min)
             min_dist = min(dist_lis)
             return (1-(min_dist/init_dist))
+        
+        else:
+            
+            if len(path[game_obj._worlddict['gcond']['obj']]) == 2:
+                dist_list = [
+                    np.sqrt((cord[1]-goal_cord[1])**2) \
+                    for cord in path[game_obj._worlddict['gcond']['obj']][0]
+                ]
+            else:
+                dist_list = [
+                    np.sqrt((cord[1]-goal_cord[1])**2) \
+                    for cord in path[game_obj._worlddict['gcond']['obj']]
+                ]
 
+            dist_goal_min = min(dist_list)
+
+            return (1-(dist_goal_min/init_dist))
+            
         
     elif game_obj._worlddict['gcond']['goal'] != 'Floor':
         #get the minimum distance of goal from object
@@ -354,7 +398,7 @@ def calc_reward(path, init_dist, goal_cord, game_obj):
 
             return (1-(dist_goal_min/init_dist))
 
-        else:
+        elif 'objlist' in game_obj._worlddict['gcond'].keys():
             ball_list = game_obj._worlddict['gcond']['objlist']
             dist_lis = []
             for ball in ball_list:
@@ -373,6 +417,22 @@ def calc_reward(path, init_dist, goal_cord, game_obj):
                 dist_lis.append(dist_goal_min)
             min_dist = min(dist_lis)
             return (1-(min_dist/init_dist))
+        
+        else:
+            if len(path[game_obj._worlddict['gcond']['obj']]) == 2:
+                dist_list = [
+                    np.sqrt((cord[0]-goal_cord[0])**2 + (cord[1]-goal_cord[1])**2) \
+                    for cord in path[game_obj._worlddict['gcond']['obj']][0]
+                ]
+            else:
+                dist_list = [
+                    np.sqrt((cord[0]-goal_cord[0])**2 + (cord[1]-goal_cord[1])**2) \
+                    for cord in path[game_obj._worlddict['gcond']['obj']]
+                ]
+
+            dist_goal_min = min(dist_list)
+
+            return (1-(dist_goal_min/init_dist))
     else:
         print("Moving goal detected ... ")
         pdb.set_trace()
@@ -418,7 +478,6 @@ def get_dynamic_obj(world_dict):
             if value['name'] == 'Goal':
                 continue
         if value['color'] in ['red', 'blue']:
-                
             if 'position' in value.keys():
                 y_mean = value['position'][1]
                 x_range = [
@@ -466,7 +525,7 @@ def get_dynamic_obj(world_dict):
 
             elif 'vertices' in value.keys():
                 if len(value['vertices'])==4:
-                    y_mean = (value['vertices'][0][1] + value['vertices'][0][1])/2
+                    y_mean = (value['vertices'][0][1] + value['vertices'][2][1])/2
                     x_min  = value['vertices'][0][0]
                     x_max  = value['vertices'][2][0]
                     value.update({'y_mean':y_mean, 'x_range':[x_min, x_max]})
@@ -522,7 +581,7 @@ def simulate(game_obj, init_pts, init_dist, goal_cord, noisy=True):
                     toolname=tool,position=pts_no ,maxtime=20.
                 )
                 if path_dict == None:
-                    print("No path achieved")
+                    #print("No path achieved")
                     continue
                 
             reward = calc_reward(path_dict, init_dist, goal_cord, game_obj)
@@ -710,7 +769,7 @@ def SSUP_model_run(world, game, idg):
     
     #Sample ninit points from prior π(s) for each tool
     init = sample(world, dynamic_obj, world._tools, 3)
-    print("The initial points are ", init)
+    #print("The initial points are ", init)
 
     rewards, success, best_action = simulate(world, init, init_dist, goal_cord)
     
@@ -739,6 +798,7 @@ def SSUP_model_run(world, game, idg):
     trial = 0
     task_comp = False
     out_df = pd.DataFrame()
+    
     while True:
 
         abs_best_action = {'reward':-1}
@@ -782,7 +842,7 @@ def SSUP_model_run(world, game, idg):
             out_df = pd.concat([out_df, game_df])
 
             #try:
-            print("Demonstrating the action ", abs_best_action['action'] , abs_best_action['pos'])
+            #print("Demonstrating the action ", abs_best_action['action'] , abs_best_action['pos'])
 
             #demonstrateTPPlacement(world, abs_best_action['action'] , abs_best_action['pos'])
             #except:
@@ -825,6 +885,6 @@ def SSUP_model_run(world, game, idg):
         if task_comp:
             break
         
-        print("Trial Completed are ---> ", trial)
-        print("The new policy params are", policy_params)
-        print("The reward on this iteration was", avg_rewards)
+        #print("Trial Completed are ---> ", trial)
+        #print("The new policy params are", policy_params)
+        #print("The reward on this iteration was", avg_rewards)

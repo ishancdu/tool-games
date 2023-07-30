@@ -46,6 +46,7 @@ def read_the_game_file(file_name, path):
     return tp
 
 total_iter = 50
+
 def run_games(game_dict):
     """
     Runs the games and saves the data in the data folder
@@ -53,9 +54,16 @@ def run_games(game_dict):
     for game in game_dict['games']:
 
         #read the game file and create the game obj
+        '''
         game_obj = read_the_game_file(
             game,
             '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/'
+        )
+        '''
+        print("Running the game --> ", game)
+        game_obj = read_the_game_file(
+            game,
+            game_dict['path']
         )
         
         if game_dict['gravity'] == 'double':
@@ -72,11 +80,13 @@ def run_games(game_dict):
             out_df['success'] = success
             out_df['total_attempt'] = out_df.shape[0]
             main_out = pd.concat([main_out, out_df])
-            main_out.to_csv("outputs/"+game.split('.')[0]+".csv", index=False)
+            main_out.to_csv("outputs/double_new/"+game.split('.')[0]+".csv", index=False)
             
         
 if __name__ == '__main__':
 
+
+    '''
     game_dict_normal = {
         'gravity': 'normal',
         'games': [
@@ -117,7 +127,32 @@ if __name__ == '__main__':
         ]
     }
     
-    run_games(game_dict_unp)
+    game_dict_new_half = {
+        'gravity': 'double',
+        'path' : '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/new/', 
+        'games': os.listdir('/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/new/')
+        
+    }
+
+    game_dict_done_normal_half = {
+        'gravity': 'double',
+        'path' : '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/done_normal/', 
+        'games': os.listdir('/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/done_normal/')
+        
+    }
+    '''
+    game_dict_new_normal = {
+        'gravity': 'double',
+        'path' : '/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/rem_games/', 
+        'games': os.listdir('/home/ishan/workspace/msc_dissertation/tool-games/environment/Trials/all_games/rem_games/')
+        
+    }
+    
+
+
+    
+    #run_games(game_dict_new_half)
+    run_games(game_dict_new_normal)
     # Find the path of objects over 2s
     # Comes out as a dict with the moveable object names
     # (PLACED for the placed tool) with a list of positions over time each

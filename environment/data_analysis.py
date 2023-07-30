@@ -1,0 +1,267 @@
+#the file contains the script to analyse all the data
+import os
+import pdb
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats.stats import pearsonr as cor
+
+gravity_dict = {'normal':200, 'half':100, 'double':400}
+
+def read_human_data(path):
+    """
+    The function reads the human participant data
+    """
+    
+    data_file = os.listdir(path)
+    df = pd.read_csv(path+'/'+data_file[0])
+    df = df.rename(columns={"attempt #": 'total_attempt'})
+    return df
+
+def combine_model_data(path):
+    """
+    combines all the data into a single csv file
+    """
+    env_folders = os.listdir(path)
+    comb_df = pd.DataFrame()
+    
+    for env in env_folders:
+        games = os.listdir(path+'/'+env)
+        for game in games:
+            df = pd.read_csv(path+'/'+env+'/'+game)
+            df['Gravity'] = gravity_dict[env]
+            comb_df = pd.concat([comb_df, df])
+    
+    return comb_df
+
+def desc_func(df):
+    """
+    The function gets the descriptive statistic for each game 
+    """
+    df_n = df.drop(df[(df["total_attempt"]>10)].index)
+    attempt_mean = df_n.groupby(['participant ID']).agg({'total_attempt':max}).mean()
+    accuracy = 100* (len(df_n[df_n['success']==1]['participant ID'].unique())\
+                     /len(df['participant ID'].unique()))
+    return pd.DataFrame({
+        'accuracy_human': accuracy, 'average_attempt_human': attempt_mean[0]}, index=[0]
+                        )
+
+
+def desc_func_model(df):
+    """
+    The function gets the descriptive statistic for each game for model run
+    """
+    vals = df.groupby(['game iter']).agg({'total_attempt':max})
+    vals['unsuccess'] = 0
+
+    vals.loc[vals[vals['total_attempt']>10].index, 'unsuccess'] = 1
+    vals.loc[vals[vals['total_attempt']>10].index, 'total_attempt'] = 10
+    mean_trial = vals.mean()[0]
+    accuracy = ((vals.shape[0]-vals['unsuccess'].sum())/vals.shape[0])*100
+
+    return pd.DataFrame({
+        'accuracy_model': accuracy, 'average_attempt_model': mean_trial}, index=[0]
+                        )
+    
+    
+def ssup_agg(df):
+    
+    vals = df.groupby(['Idx']).agg({'TotalAttempts':max})
+    vals['unsuccess'] = 0
+    vals.loc[vals[vals['TotalAttempts']>10].index, 'unsuccess'] = 1
+    vals.loc[vals[vals['TotalAttempts']>10].index, 'TotalAttempts'] = 10
+    mean_trial = vals.mean()[0]
+    accuracy = ((vals.shape[0]-vals['unsuccess'].sum())/vals.shape[0])*100
+    
+    return pd.DataFrame({'accuracy': accuracy, 'average_attempt': mean_trial}, index=[0])
+
+
+def plot_corr_chart(df, col1, col2, file_name, accuracy=False, gravity=True):
+    """
+    The function plots the correlation chart for the given 2 corrdinates
+    """
+    
+    fig, ax = plt.subplots()
+    plt.figure(figsize=(10,10))
+    plt.text(
+        0.5, 2.2, 'correlation for accuracy is '+str(round(cor(df[col1], df[col2]).statistic,3)),
+        fontsize=12, transform=ax.transAxes
+    )
+    plt.plot(range(1,120), range(1,120), linestyle='dashed')
+    
+    scatter = plt.scatter(df[col1], df[col2], c=range(1+45,len(df)+1+45), s=100)
+    plt.xlabel(col1, size=14)
+    plt.ylabel(col2, size=14)
+
+    if accuracy:
+        plt.xlim(0, 120)
+        plt.ylim(0, 120)
+        
+    else:
+        plt.xlim(0, 12)
+        plt.ylim(0, 12)
+
+
+    for i in range(len(df)):
+
+        if gravity:
+            plt.annotate(
+                df['game_name'].iloc[i]+"-"+str(df['Gravity'].iloc[i]),
+                (df[col1].iloc[i], df[col2].iloc[i]), xytext=(6,5), textcoords='offset pixels'
+            )
+            
+        else:
+            plt.annotate(
+                df['game_name'].iloc[i],
+                (df[col1].iloc[i], df[col2].iloc[i]), xytext=(6,5), textcoords='offset pixels'
+            )
+
+    '''
+    plt.legend(
+        handles=scatter.legend_elements()[0],
+        labels=list(df['game_name']+ "-"+ df['Gravity'].astype('str')),
+        title="game name Gravity"
+    )
+    '''
+    plt.grid()
+
+    plt.savefig(
+        '/home/ishan/workspace/msc_dissertation/tool-games/environment/outputs/'+file_name
+    )
+    
+    plt.clf()
+
+if __name__ == '__main__':
+
+    #original ssup model data 
+    ssup_original_data \
+        = '/home/ishan/workspace/msc_dissertation/tool-games/data/original_levels/models/ssup_full.csv'
+    ssup_val_data \
+        = '/home/ishan/workspace/msc_dissertation/tool-games/data/cv_levels/models/ssup_full.csv'
+    
+    ss_df = pd.read_csv(ssup_original_data)
+    ss_stat = ss_df.groupby('Trial').apply(ssup_agg)
+    ss_stat = ss_stat.reset_index().drop(columns = ['level_1'])
+    ss_stat = ss_stat.rename(columns = {'Trial':'game_name'})
+
+    sv_df = pd.read_csv(ssup_val_data)
+    sv_stat = sv_df.groupby('Trial').apply(ssup_agg)
+    sv_stat = sv_stat.reset_index().drop(columns = ['level_1'])
+    sv_stat = sv_stat.rename(columns = {'Trial':'game_name'})
+
+
+    data_output_path \
+        = '/home/ishan/workspace/msc_dissertation/tool-games/environment/outputs/model_output'
+    human_data_path \
+        = '/home/ishan/workspace/msc_dissertation/tool-games/environment/data'
+
+    
+
+    #combined human df 
+    human_df = read_human_data(human_data_path)
+    human_df = human_df.drop(human_df[human_df['game_name'].isin(['Funnel', 'FridgeMagnet'])].index)
+    #combined model df
+    model_df = combine_model_data(data_output_path)
+    pdb.set_trace()
+    
+    #get descriptive statistics game wise for participants
+    desc_human_df = human_df.groupby(['game_name', 'Gravity']).apply(desc_func)
+    desc_human_df = desc_human_df.reset_index().drop(columns=['level_2'])
+
+    #get descriptive statistics game wise for model
+    desc_model_df = model_df.groupby(['game_name', 'Gravity']).apply(desc_func_model)
+    desc_model_df = desc_model_df.reset_index().drop(columns = ['level_2'])
+    
+    #
+    df_comb_stat = pd.merge(desc_human_df, desc_model_df, on=['game_name', 'Gravity'], how='inner')
+
+    #comparison between original model and replicated model
+    df_comp = pd.merge(
+        ss_stat, desc_model_df[desc_model_df['Gravity']==200], on='game_name', how='left'
+    )
+    df_val_comp = pd.merge(
+        sv_stat, desc_model_df[desc_model_df['Gravity']==200], on='game_name', how='inner'
+    )
+
+    plot_corr_chart(
+        df_comb_stat, 'accuracy_human', 'accuracy_model',
+        file_name = 'accuracy_human_model.png', accuracy=True
+    )
+    plot_corr_chart(
+        df_comb_stat, 'average_attempt_human', 'average_attempt_model',
+        file_name='attempt_human_model.png'
+    )
+    plot_corr_chart(
+        df_comb_stat[df_comb_stat['Gravity'] == 200], 'average_attempt_human', 'average_attempt_model',
+        file_name='attempt_200_human_model.png', gravity=False
+    )        
+    plot_corr_chart(
+        df_comb_stat[df_comb_stat['Gravity'] == 200], 'accuracy_human', 'accuracy_model',
+        file_name='accuracy_200_human_model.png', gravity=False, accuracy=True
+    )
+    plot_corr_chart(
+        df_comb_stat[df_comb_stat['Gravity'] == 100], 'average_attempt_human', 'average_attempt_model',
+        file_name='attempt_100_human_model.png', gravity=False
+    )
+    plot_corr_chart(
+        df_comb_stat[df_comb_stat['Gravity'] == 100], 'accuracy_human', 'accuracy_model',
+        file_name='accuracy_100_human_model.png', gravity=False, accuracy=True
+    )
+    plot_corr_chart(
+        df_comb_stat[df_comb_stat['Gravity'] == 400], 'average_attempt_human', 'average_attempt_model',
+        file_name='attempt_400_human_model.png', gravity=False
+    )
+    plot_corr_chart(
+        df_comb_stat[df_comb_stat['Gravity'] == 400], 'accuracy_human', 'accuracy_model',
+        file_name='accuracy_400_human_model.png', gravity=False, accuracy=True
+    )
+
+    
+    pvt_model = desc_model_df.pivot(
+        index='game_name', columns='Gravity', values=['accuracy_model', 'average_attempt_model']
+    )
+    pvt_model.columns = [col[0]+'-'+str(col[1]) for col in pvt_model.columns]
+    pvt_model = pvt_model.reset_index()
+
+    pvt_human = desc_human_df.pivot(
+        index='game_name', columns='Gravity', values=['accuracy_human', 'average_attempt_human']
+    )
+    pvt_human.columns = [col[0]+'-'+str(col[1]) for col in pvt_human.columns]
+    pvt_human = pvt_human.reset_index()
+
+    acc_pvt_hum = pvt_human[['game_name', 'accuracy_human-100', 'accuracy_human-400']].dropna()
+    acc_pvt_mod = pvt_model[pvt_model['game_name'].isin(acc_pvt_hum['game_name'].unique())]
+
+    plot_corr_chart(
+        acc_pvt_hum, 'accuracy_human-100', 'accuracy_human-400',
+        file_name='accuracy_100_400_part.png', gravity=False, accuracy=True
+    )
+    plot_corr_chart(
+        pvt_model, 'accuracy_model-100', 'accuracy_model-400',
+        file_name='accuracy_100_400_model.png', gravity=False, accuracy=True
+    )
+    plot_corr_chart(
+        pvt_model, 'accuracy_model-200', 'accuracy_model-400',
+        file_name='accuracy_200_400_model.png', gravity=False, accuracy=True
+    )
+    plot_corr_chart(
+        pvt_model, 'accuracy_model-200', 'accuracy_model-100',
+        file_name='accuracy_200_100_model.png', gravity=False, accuracy=True
+    )
+    plot_corr_chart(
+        pvt_model, 'average_attempt_model-200', 'average_attempt_model-100',
+        file_name='average_attempt_200_100_model.png', gravity=False, accuracy=False
+    )
+    plot_corr_chart(
+        pvt_model, 'average_attempt_model-200', 'average_attempt_model-400',
+        file_name='average_attempt_200_400_model.png', gravity=False, accuracy=False
+    )
+    plot_corr_chart(
+        pvt_model, 'average_attempt_model-100', 'average_attempt_model-400',
+        file_name='average_attempt_100_400_model.png', gravity=False, accuracy=False
+    )
+    
+
+    
+    
