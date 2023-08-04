@@ -570,7 +570,7 @@ def simulate(game_obj, init_pts, init_dist, goal_cord, noisy=True):
             noise_dict = {
                 'noise_position_static': 0, 'noise_position_moving': 0,
                 'noise_collision_direction': .1, 'noise_collision_elasticity': .1, 'noise_gravity': 0,
-                'noise_object_friction': 0, 'noise_object_density': 0, 'noise_object_elasticity': .1
+                'noise_object_friction': 0, 'noise_object_density': 0, 'noise_object_elasticity': 0
                          }
             if noisy:
                 path_dict, success, time_taken, world_act = game_obj.runFullNoisyPath(
